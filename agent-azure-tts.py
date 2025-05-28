@@ -14,6 +14,7 @@ from livekit.agents import function_tool, get_job_context, RunContext, ChatConte
 from dataclasses import dataclass
 from livekit.agents.voice.events import ErrorEvent
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from utils.data_capture import record_data
 
 load_dotenv()
 
@@ -70,7 +71,7 @@ class ConsentCollectorAgent(Agent):
         super().__init__(
             instructions="""You are a voice AI agent with the singular task to collect positive 
             consent from the user to record the call. If consent is not given, you must end the call. 
-            If consent is given, always use on_consent_given tool and otherwise use end_call tool.
+            If consent is given, always use on_consent_given tool and otherwise use end_call tool. Inform that your name is Lango and you are calling from LangoEdge.
             If user is deviating from the task, redirect him back to the task politely and courteously.
             Invoke the tools only when you get the confirmation from the user that the data you captured is correct.
             Please speak in english. Make your tone engaging and friendly.
@@ -146,14 +147,12 @@ class UserDataCollectorAgent(Agent):
     @function_tool()
     async def record_date_of_inspection(self, context: RunContext[MySessionInfo], date_of_inspection: str):
         """Use this tool to record the user's date of inspection."""
-        context.userdata.date_of_inspection = date_of_inspection
-        await self.session.generate_reply()
+        await record_data(context, date_of_inspection=date_of_inspection)
     
     @function_tool()
     async def record_time_of_inspection(self, context: RunContext[MySessionInfo], time_of_inspection: str):
         """Use this tool to record the user's time of inspection."""
-        context.userdata.time_of_inspection = time_of_inspection
-        await self.session.generate_reply()
+        await record_data(context, time_of_inspection=time_of_inspection)
 
     @function_tool()
     async def end_call(self) -> None:
@@ -161,8 +160,6 @@ class UserDataCollectorAgent(Agent):
         await self.session.say("Thank you for your time, have a wonderful day.")
         job_ctx = get_job_context()
         await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
-
-
 
 async def entrypoint(ctx: agents.JobContext):
 
@@ -178,7 +175,7 @@ async def entrypoint(ctx: agents.JobContext):
         tts=rime.TTS(
             model="mist",
             speaker="wildflower",
-            speed_alpha=0.9,
+            speed_alpha=0.5,
             reduce_latency=True,
             pause_between_brackets=True,
         ),
