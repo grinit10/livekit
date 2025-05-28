@@ -1,0 +1,9 @@
+{
+  "trunk": {
+    "name": "Langoedge outbound trunk",
+    "address": "langoedge.pstn.twilio.com",
+    "numbers": ["+61348230307"],
+    "auth_username": "arnab",
+    "auth_password": "n95adlv8s#1WltRiZed#"
+  }
+}
