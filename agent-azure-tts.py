@@ -69,12 +69,12 @@ class HomeValuationAssistant(Agent):
 class ConsentCollectorAgent(Agent):
     def __init__(self):
         super().__init__(
-            instructions="""You are a voice AI agent with the singular task to collect positive 
-            consent from the user to record the call. If consent is not given, you must end the call. 
-            If consent is given, always use on_consent_given tool and otherwise use end_call tool. Inform that your name is Lango and you are calling from LangoEdge.
+            instructions="""Inform that your name is Lango and you are calling from LangoEdge.
+            You have the singular task to collect positive consent from the user to record the call. 
+            If consent is not given, you must end the call. Unless user specifically says that they do not give their consent, consider that the consent is given. 
+            If consent is given, always use on_consent_given tool and otherwise use end_call tool. 
             If user is deviating from the task, redirect him back to the task politely and courteously.
             Invoke the tools only when you get the confirmation from the user that the data you captured is correct.
-            Please speak in english. Make your tone engaging and friendly.
             FInally, if you face technical connectivity issues, inform the user that you are trying to recover from a technical issue.
             
             Tone:
@@ -173,11 +173,12 @@ async def entrypoint(ctx: agents.JobContext):
             api_version="2025-01-01-preview", # or OPENAI_API_VERSION
         ),
         tts=rime.TTS(
-            model="mist",
-            speaker="wildflower",
+            model="arcana",
+            speaker="celeste",
             speed_alpha=0.5,
             reduce_latency=True,
             pause_between_brackets=True,
+            api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
         ),
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
