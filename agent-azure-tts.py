@@ -161,18 +161,18 @@ class UserDataCollectorAgent(BaseAgent):
 
 async def entrypoint(ctx: agents.JobContext):
 
-    # tts = elevenlabs.TTS(
-    #     voice_id="ODq5zmih8GrVes37Dizd",
-    #     model="eleven_flash_v2_5"
-    # )
-    tts=rime.TTS(
-            model="mist",
-            speaker="bayou",
-            speed_alpha=0.5,
-            reduce_latency=True,
-            pause_between_brackets=True,
-            api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
-        )
+    tts = elevenlabs.TTS(
+         voice_id="ODq5zmih8GrVes37Dizd",
+         model="eleven_flash_v2_5"
+     )
+    #tts=rime.TTS(
+    #        model="mist",
+    #        speaker="bayou",
+    #        speed_alpha=0.5,
+    #        reduce_latency=True,
+    #        pause_between_brackets=True,
+    #        api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
+    #    )
     session = AgentSession(
         userdata={
             "date_of_inspection": None,

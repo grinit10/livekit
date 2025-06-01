@@ -5,6 +5,7 @@ from typing import Optional
 from livekit import agents, api
 from livekit.plugins import (
     openai,
+    groq,
 )
 from livekit.agents import (
     Agent,
@@ -12,6 +13,7 @@ from livekit.agents import (
 )
 from livekit.agents import ChatContext, ChatMessage
 import asyncio
+from typing import AsyncIterable
 
 load_dotenv()
 
@@ -27,50 +29,47 @@ class BaseAgent(Agent):
             ),
             tools=tools,
         )
-        self._fast_llm = openai.LLM.with_azure(
-            azure_deployment="o3-mini",
-            azure_endpoint="https://langoedge-openai-dev.openai.azure.com/", # or AZURE_OPENAI_ENDPOINT
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"), # or AZURE_OPENAI_API_KEY
-            api_version="2025-01-01-preview", # or OPENAI_API_VERSION
-        )
+        self._fast_llm = groq.LLM(
+                model="llama-3.1-8b-instant"
+            )
         self._fast_llm_prompt = llm.ChatMessage(
             role="system",
             content=[
-                "Generate a short instant response to the user's message with 5 to 10 words.",
+                "Generate a short instant response to the user's message with 5 to 10 words to make the conversation sound natural and engaging.",
                 "Do not answer the questions directly. Examples:, let me think about that, "
                 "wait a moment, that's a good question, etc.",
             ],
         )
 
-        async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
-            # Create a short "silence filler" response to quickly acknowledge the user's input
-            fast_llm_ctx = turn_ctx.copy(
-                exclude_instructions=True, exclude_function_call=True
-            ).truncate(max_items=3)
-            fast_llm_ctx.items.insert(0, self._fast_llm_prompt)
-            fast_llm_ctx.items.append(new_message)
+    async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
+        # Create a short "silence filler" response to quickly acknowledge the user's input
+        fast_llm_ctx = turn_ctx.copy(
+            exclude_instructions=True, exclude_function_call=True
+        ).truncate(max_items=3)
+        fast_llm_ctx.items.insert(0, self._fast_llm_prompt)
+        fast_llm_ctx.items.append(new_message)
 
-            # # Intentionally not awaiting SpeechHandle to allow the main response generation to
-            # # run concurrently
-            # self.session.say(
-            #     self._fast_llm.chat(chat_ctx=fast_llm_ctx).to_str_iterable(),
-            #     add_to_chat_ctx=False,
-            # )
+        # Intentionally not awaiting SpeechHandle to allow the main response generation to
+        # run concurrently
+        #self.session.say(
+        #    self._fast_llm.chat(chat_ctx=fast_llm_ctx).to_str_iterable(),
+        #    add_to_chat_ctx=False,
+        #)
 
-            # Alternatively, if you want the reply to be aware of this "silence filler" response,
-            # you can await the fast llm done and add the message to the turn context. But note
-            # that not all llm supports completing from an existing assistant message.
+        # Alternatively, if you want the reply to be aware of this "silence filler" response,
+        # you can await the fast llm done and add the message to the turn context. But note
+        # that not all llm supports completing from an existing assistant message.
 
-            fast_llm_fut = asyncio.Future[str]()
+        fast_llm_fut = asyncio.Future[str]()
 
-            async def _fast_llm_reply() -> AsyncIterable[str]:
-                filler_response: str = ""
-                async for chunk in self._fast_llm.chat(chat_ctx=fast_llm_ctx).to_str_iterable():
-                    filler_response += chunk
-                    yield chunk
-                fast_llm_fut.set_result(filler_response)
+        async def _fast_llm_reply() -> AsyncIterable[str]:
+            filler_response: str = ""
+            async for chunk in self._fast_llm.chat(chat_ctx=fast_llm_ctx).to_str_iterable():
+                filler_response += chunk
+                yield chunk
+            fast_llm_fut.set_result(filler_response)
 
-            self.session.say(_fast_llm_reply(), add_to_chat_ctx=False)
+        await self.session.say(_fast_llm_reply(), add_to_chat_ctx=False)
 
-            filler_response = await fast_llm_fut
-            turn_ctx.add_message(role="assistant", content=filler_response, interrupted=False)
+        filler_response = await fast_llm_fut
+        turn_ctx.add_message(role="assistant", content=filler_response, interrupted=False)
