@@ -1,163 +1,19 @@
 from dotenv import load_dotenv
-
-from livekit import agents, api
-from livekit.agents import AgentSession, Agent, RoomInputOptions, BackgroundAudioPlayer, AudioConfig, BuiltinAudioClip, ChatMessage
-from livekit.plugins import (
-    openai,
-    noise_cancellation,
-    deepgram,
-    silero,
-    rime,
-    elevenlabs,
-)
-import json
-from livekit.agents import function_tool, get_job_context, RunContext, ChatContext, function_tool
+from livekit import agents
+from livekit.agents import RoomInputOptions, AgentSession, ErrorEvent
+from livekit.plugins import elevenlabs, deepgram, silero, noise_cancellation
+from generic_agent import GenericAgent
+from agent_config import config
 from dataclasses import dataclass
-from livekit.agents.voice.events import ErrorEvent
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from utils.data_capture import record_data
 from base_agent import BaseAgent
-
+from data_collector_agent import UserDataCollectorAgent
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from livekit.agents.voice.events import ErrorEvent
+import json
 
 load_dotenv()
 
-
-@dataclass
-class MySessionInfo:
-    date_of_inspection: str | None = None
-    time_of_inspection: str | None = None
-
-class HomeValuationAssistant(BaseAgent):
-    def __init__(self, chat_ctx: ChatContext):
-        super().__init__(instructions="""Your only job is to get user to book a home valuation inspection. If user is not interested in booking, end the call.\
-        Focus on getting the user to book a home valuation inspection. Inform the user that the service is free and it will help him know how the property market is doing.\
-        Please speak in english. Make your tone engaging and friendly.\
-        Invoke the tools only when you get the confirmation from the user that the data you captured is correct.\
-        FInally, if you face technical connectivity issues, inform the user that you are trying to recover from a technical issue.
-        
-        Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence.
-
-        Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
-
-        Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
-
-        Emotion: Genuine empathy and understanding.
-
-        Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
-
-        Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-        chat_ctx=chat_ctx)
-
-    async def on_enter(self) -> None:
-        await self.session.generate_reply()
-
-    # async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
-    #     await self.session.generate_reply()
-
-    @function_tool()
-    async def on_positive_response(self):
-        """Use this tool when user is interested in booking a home valuation inspection."""
-
-        # Perform a handoff, immediately transferring control to the new agent
-        return UserDataCollectorAgent(chat_ctx=self.session._chat_ctx)
-
-    @function_tool()
-    async def end_call(self):
-        """Use this tool to indicate that user is not interested in booking a home valuation inspection or when user wants to end the call."""
-        await self.session.say("Thank you for your time, have a wonderful day.")
-        job_ctx = get_job_context()
-        await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
-
-
-class ConsentCollectorAgent(BaseAgent):
-    def __init__(self, chat_ctx: ChatContext):
-        super().__init__(
-            instructions="""Inform that your name is Tom and you are calling from Language.
-            You have to collect positive consent from the user to record the call. 
-            If consent is not given, you must end the call. Unless user specifically says that they do not give their consent, consider that the consent is given. 
-            If consent is given, always use on_consent_given tool and otherwise use end_call tool. 
-            If user is deviating from the task, redirect him back to the task politely and courteously.
-            Invoke the tools only when you get the confirmation from the user that the data you captured is correct.
-            FInally, if you face technical connectivity issues, inform the user that you are trying to recover from a technical issue.
-            
-            Tone:
-            Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence.
-
-            Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
-
-            Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
-
-            Emotion: Genuine empathy and understanding.
-
-            Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
-
-            Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-            chat_ctx=chat_ctx,
-        )
-
-    async def on_enter(self) -> None:
-        await self.session.generate_reply()
-
-    # async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
-    #     await self.session.generate_reply()
-
-    @function_tool()
-    async def on_consent_given(self):
-        """Use this tool to indicate that consent has been given and the call may proceed."""
-
-        # Perform a handoff, immediately transferring control to the new agent
-        return UserDataCollectorAgent(chat_ctx=self.session._chat_ctx)
-
-    @function_tool()
-    async def end_call(self) -> None:
-        """Use this tool to indicate that consent has not been given and the call should end or when user wants to end the call."""
-        await self.session.say("Thank you for your time, have a wonderful day.")
-        job_ctx = get_job_context()
-        await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
-
-
-class UserDataCollectorAgent(BaseAgent):
-    def __init__(self, chat_ctx: ChatContext):
-
-        tools=[
-                function_tool(record_data("date_of_inspection"), name="record_date_of_inspection", description="Use this tool to record the user's date of inspection."),
-                function_tool(record_data("time_of_inspection"), name="record_time_of_inspection", description="Use this tool to record the user's time of inspection."),
-            ]
-        super().__init__(
-            instructions="""You work step by step. the steps are as follows and speak in english:
-        1. Ask for user's date of inspection and time of inspection.
-            1a. If the user provides the information, use the record_date_of_inspection tool.
-            1b. If the user does not want to provide the information, use the end_call tool.
-        2. Ask for user's time of inspection.
-            2a. If the user provides the information, use the record_time_of_inspection tool.
-            2b. If the user does not want to provide the information, use the end_call tool.
-        3. If user is deviating from the task, redirect him back to the task politely and courteously.
-        
-        Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence. Make you utterances sound as real as possible.
-
-        Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
-
-        Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
-
-        Emotion: Genuine empathy and understanding.
-
-        Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
-
-        Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-            chat_ctx=chat_ctx,
-            tools=tools
-        )
-
-    async def on_enter(self) -> None:
-        await self.session.generate_reply()
-
-
-    @function_tool()
-    async def end_call(self) -> None:
-        """Use this tool when both name and email is recorded or when user wants to end the call."""
-        await self.session.say("Thank you for your time, have a wonderful day.")
-        job_ctx = get_job_context()
-        await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
 
 async def entrypoint(ctx: agents.JobContext):
 
@@ -198,7 +54,7 @@ async def entrypoint(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=ConsentCollectorAgent(chat_ctx=session._chat_ctx),
+        agent=GenericAgent(chat_ctx=session._chat_ctx, instructions=config["nodes"][0]["instructions"], data_capture_tools=config["nodes"][0]["data_capture_tools"], edges=config["nodes"][0]["edges"]),
         room_input_options=RoomInputOptions(
             # LiveKit Cloud enhanced noise cancellation
             # - If self-hosting, omit this parameter

@@ -36,8 +36,8 @@ class BaseAgent(Agent):
             role="system",
             content=[
                 "Generate a short instant response to the user's message with 5 to 10 words to make the conversation sound natural and engaging.",
-                "Do not answer the questions directly. Examples:, let me think about that, "
-                "wait a moment, that's a good question, etc.",
+                "Focus on the chat context to generate the response. MUST MAKE SURE THE RESPONSE IS RELEVANT TO THE CHAT CONTEXT IN ENGLISH.",
+                "Do not answer the questions directly. Examples:, let me think about that, wait a moment, that's a good question, etc.",
             ],
         )
 
