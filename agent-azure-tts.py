@@ -173,8 +173,11 @@ async def entrypoint(ctx: agents.JobContext):
             pause_between_brackets=True,
             api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
         )
-    session = AgentSession[MySessionInfo](
-        userdata=MySessionInfo(),
+    session = AgentSession(
+        userdata={
+            "date_of_inspection": None,
+            "time_of_inspection": None,
+        },
         stt=deepgram.STT(model="nova-3", language="multi"),
         tts=tts,
         vad=silero.VAD.load(),
