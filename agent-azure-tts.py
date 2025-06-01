@@ -8,12 +8,16 @@ from livekit.plugins import (
     deepgram,
     silero,
     rime,
+    elevenlabs,
 )
 import json
-from livekit.agents import function_tool, get_job_context, RunContext, ChatContext
+from livekit.agents import function_tool, get_job_context, RunContext, ChatContext, function_tool
 from dataclasses import dataclass
 from livekit.agents.voice.events import ErrorEvent
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from utils.data_capture import record_data
+from base_agent import BaseAgent
+
 
 load_dotenv()
 
@@ -23,7 +27,7 @@ class MySessionInfo:
     date_of_inspection: str | None = None
     time_of_inspection: str | None = None
 
-class HomeValuationAssistant(Agent):
+class HomeValuationAssistant(BaseAgent):
     def __init__(self, chat_ctx: ChatContext):
         super().__init__(instructions="""Your only job is to get user to book a home valuation inspection. If user is not interested in booking, end the call.\
         Focus on getting the user to book a home valuation inspection. Inform the user that the service is free and it will help him know how the property market is doing.\
@@ -37,7 +41,7 @@ class HomeValuationAssistant(Agent):
 
         Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
 
-        Emotion: Genuine empathy and understanding; speak with warmth, especially during apologies ("I'm very sorry for any disruption...").
+        Emotion: Genuine empathy and understanding.
 
         Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
@@ -65,15 +69,15 @@ class HomeValuationAssistant(Agent):
         await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
 
 
-class ConsentCollectorAgent(Agent):
-    def __init__(self):
+class ConsentCollectorAgent(BaseAgent):
+    def __init__(self, chat_ctx: ChatContext):
         super().__init__(
-            instructions="""You are a voice AI agent with the singular task to collect positive 
-            consent from the user to record the call. If consent is not given, you must end the call. 
-            If consent is given, always use on_consent_given tool and otherwise use end_call tool.
+            instructions="""Inform that your name is Tom and you are calling from Language.
+            You have to collect positive consent from the user to record the call. 
+            If consent is not given, you must end the call. Unless user specifically says that they do not give their consent, consider that the consent is given. 
+            If consent is given, always use on_consent_given tool and otherwise use end_call tool. 
             If user is deviating from the task, redirect him back to the task politely and courteously.
             Invoke the tools only when you get the confirmation from the user that the data you captured is correct.
-            Please speak in english. Make your tone engaging and friendly.
             FInally, if you face technical connectivity issues, inform the user that you are trying to recover from a technical issue.
             
             Tone:
@@ -83,11 +87,12 @@ class ConsentCollectorAgent(Agent):
 
             Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
 
-            Emotion: Genuine empathy and understanding; speak with warmth, especially during apologies ("I'm very sorry for any disruption...").
+            Emotion: Genuine empathy and understanding.
 
             Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
-            Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support."""
+            Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
+            chat_ctx=chat_ctx,
         )
 
     async def on_enter(self) -> None:
@@ -111,8 +116,13 @@ class ConsentCollectorAgent(Agent):
         await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
 
 
-class UserDataCollectorAgent(Agent):
+class UserDataCollectorAgent(BaseAgent):
     def __init__(self, chat_ctx: ChatContext):
+
+        tools=[
+                function_tool(record_data("date_of_inspection"), name="record_date_of_inspection", description="Use this tool to record the user's date of inspection."),
+                function_tool(record_data("time_of_inspection"), name="record_time_of_inspection", description="Use this tool to record the user's time of inspection."),
+            ]
         super().__init__(
             instructions="""You work step by step. the steps are as follows and speak in english:
         1. Ask for user's date of inspection and time of inspection.
@@ -129,31 +139,18 @@ class UserDataCollectorAgent(Agent):
 
         Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
 
-        Emotion: Genuine empathy and understanding; speak with warmth, especially during apologies ("I'm very sorry for any disruption...").
+        Emotion: Genuine empathy and understanding.
 
         Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
         Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-            chat_ctx=chat_ctx
+            chat_ctx=chat_ctx,
+            tools=tools
         )
 
     async def on_enter(self) -> None:
         await self.session.generate_reply()
 
-    # async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
-    #     await self.session.generate_reply()
-
-    @function_tool()
-    async def record_date_of_inspection(self, context: RunContext[MySessionInfo], date_of_inspection: str):
-        """Use this tool to record the user's date of inspection."""
-        context.userdata.date_of_inspection = date_of_inspection
-        await self.session.generate_reply()
-    
-    @function_tool()
-    async def record_time_of_inspection(self, context: RunContext[MySessionInfo], time_of_inspection: str):
-        """Use this tool to record the user's time of inspection."""
-        context.userdata.time_of_inspection = time_of_inspection
-        await self.session.generate_reply()
 
     @function_tool()
     async def end_call(self) -> None:
@@ -162,26 +159,27 @@ class UserDataCollectorAgent(Agent):
         job_ctx = get_job_context()
         await job_ctx.api.room.delete_room(api.DeleteRoomRequest(room=job_ctx.room.name))
 
-
-
 async def entrypoint(ctx: agents.JobContext):
 
-    session = AgentSession[MySessionInfo](
-        userdata=MySessionInfo(),
+    tts = elevenlabs.TTS(
+         voice_id="ODq5zmih8GrVes37Dizd",
+         model="eleven_flash_v2_5"
+     )
+    #tts=rime.TTS(
+    #        model="mist",
+    #        speaker="bayou",
+    #        speed_alpha=0.5,
+    #        reduce_latency=True,
+    #        pause_between_brackets=True,
+    #        api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
+    #    )
+    session = AgentSession(
+        userdata={
+            "date_of_inspection": None,
+            "time_of_inspection": None,
+        },
         stt=deepgram.STT(model="nova-3", language="multi"),
-        llm= openai.LLM.with_azure(
-            azure_deployment="gpt-4.1",
-            azure_endpoint="https://langoedge-openai-dev.openai.azure.com/", # or AZURE_OPENAI_ENDPOINT
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"), # or AZURE_OPENAI_API_KEY
-            api_version="2025-01-01-preview", # or OPENAI_API_VERSION
-        ),
-        tts=rime.TTS(
-            model="mist",
-            speaker="wildflower",
-            speed_alpha=0.9,
-            reduce_latency=True,
-            pause_between_brackets=True,
-        ),
+        tts=tts,
         vad=silero.VAD.load(),
         turn_detection=MultilingualModel(),
         allow_interruptions=True,
@@ -200,7 +198,7 @@ async def entrypoint(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=ConsentCollectorAgent(),
+        agent=ConsentCollectorAgent(chat_ctx=session._chat_ctx),
         room_input_options=RoomInputOptions(
             # LiveKit Cloud enhanced noise cancellation
             # - If self-hosting, omit this parameter
@@ -210,6 +208,7 @@ async def entrypoint(ctx: agents.JobContext):
     )
 
     background_audio = BackgroundAudioPlayer(
+        ambient_sound=AudioConfig(BuiltinAudioClip.OFFICE_AMBIENCE, volume=0.8),
         thinking_sound=[
             AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.8),
             AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING2, volume=0.7),
