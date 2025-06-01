@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from typing import Optional
 
 from livekit import agents, api
 from livekit.plugins import (
@@ -15,7 +16,7 @@ import asyncio
 load_dotenv()
 
 class BaseAgent(Agent):
-    def __init__(self, instructions: str, chat_ctx: ChatContext):
+    def __init__(self, instructions: str, chat_ctx: ChatContext, tools: Optional[list] = []):
         super().__init__(
             instructions=instructions,
             llm=openai.LLM.with_azure(
@@ -24,9 +25,10 @@ class BaseAgent(Agent):
                 api_key=os.getenv("AZURE_OPENAI_API_KEY"), # or AZURE_OPENAI_API_KEY
                 api_version="2025-01-01-preview", # or OPENAI_API_VERSION
             ),
+            tools=tools,
         )
         self._fast_llm = openai.LLM.with_azure(
-            azure_deployment="gpt-4.1",
+            azure_deployment="o3-mini",
             azure_endpoint="https://langoedge-openai-dev.openai.azure.com/", # or AZURE_OPENAI_ENDPOINT
             api_key=os.getenv("AZURE_OPENAI_API_KEY"), # or AZURE_OPENAI_API_KEY
             api_version="2025-01-01-preview", # or OPENAI_API_VERSION

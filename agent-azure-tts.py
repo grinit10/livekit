@@ -11,7 +11,7 @@ from livekit.plugins import (
     elevenlabs,
 )
 import json
-from livekit.agents import function_tool, get_job_context, RunContext, ChatContext
+from livekit.agents import function_tool, get_job_context, RunContext, ChatContext, function_tool
 from dataclasses import dataclass
 from livekit.agents.voice.events import ErrorEvent
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -92,7 +92,7 @@ class ConsentCollectorAgent(BaseAgent):
             Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
             Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-            chat_ctx=chat_ctx
+            chat_ctx=chat_ctx,
         )
 
     async def on_enter(self) -> None:
@@ -118,6 +118,11 @@ class ConsentCollectorAgent(BaseAgent):
 
 class UserDataCollectorAgent(BaseAgent):
     def __init__(self, chat_ctx: ChatContext):
+
+        tools=[
+                function_tool(record_data("date_of_inspection"), name="record_date_of_inspection", description="Use this tool to record the user's date of inspection."),
+                function_tool(record_data("time_of_inspection"), name="record_time_of_inspection", description="Use this tool to record the user's time of inspection."),
+            ]
         super().__init__(
             instructions="""You work step by step. the steps are as follows and speak in english:
         1. Ask for user's date of inspection and time of inspection.
@@ -139,24 +144,13 @@ class UserDataCollectorAgent(BaseAgent):
         Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
         Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
-            chat_ctx=chat_ctx
+            chat_ctx=chat_ctx,
+            tools=tools
         )
 
     async def on_enter(self) -> None:
         await self.session.generate_reply()
 
-    # async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage):
-    #     await self.session.generate_reply()
-
-    @function_tool()
-    async def record_date_of_inspection(self, context: RunContext[MySessionInfo], date_of_inspection: str):
-        """Use this tool to record the user's date of inspection."""
-        await record_data(context, date_of_inspection=date_of_inspection)
-    
-    @function_tool()
-    async def record_time_of_inspection(self, context: RunContext[MySessionInfo], time_of_inspection: str):
-        """Use this tool to record the user's time of inspection."""
-        await record_data(context, time_of_inspection=time_of_inspection)
 
     @function_tool()
     async def end_call(self) -> None:
