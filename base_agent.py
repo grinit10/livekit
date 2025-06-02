@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import os
 from typing import Optional
 
-from livekit import agents, api
 from livekit.plugins import (
     openai,
     groq,

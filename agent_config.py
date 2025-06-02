@@ -11,7 +11,7 @@ config = {
                 If user is deviating from the task, redirect him back to the task politely and courteously.
                 Invoke the tools only when you get the confirmation from the user that the data you captured is correct.
                 Finally, if you face technical connectivity issues, inform the user that you are trying to recover from a technical issue.
-                
+
                 Tone:
                 Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence.
 
@@ -38,7 +38,7 @@ config = {
                     2a. If the user provides the information, use the record_time_of_inspection tool.
                     2b. If the user does not want to provide the information, use the end_call tool.
                 3. If user is deviating from the task, redirect him back to the task politely and courteously.
-            
+
                 Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence. Make you utterances sound as real as possible.
 
                 Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
@@ -49,7 +49,8 @@ config = {
 
                 Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
 
-                Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.""",
+                Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
+            """,
             "data_capture_tools": [
                 {
                     "name": "record_date_of_inspection",
@@ -62,15 +63,14 @@ config = {
                     "field": "time_of_inspection"
                 }
             ],
-            "edges": []
         }
     ],
     "edges": [
-                {
-                    "name": "on_consent_given",
-                    "description": "Use this tool to indicate that consent has been given and the call may proceed to the home valuation assistant.",
-                    "from": "consent_collector",
-                    "to": "home_valuation_assistant"
-                }
-            ]
+        {
+            "name": "on_consent_given",
+            "description": "Use this tool to indicate that consent has been given and the call may proceed to the home valuation assistant.",
+            "from": "consent_collector",
+            "to": "home_valuation_assistant"
+        }
+    ]
 }
