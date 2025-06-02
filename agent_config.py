@@ -26,13 +26,6 @@ config = {
                 Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
             """,
             "data_capture_tools": [],
-            "edges": [
-                {
-                    "name": "on_consent_given",
-                    "description": "Use this tool to indicate that consent has been given and the call may proceed to the home valuation assistant.",
-                    "to": "home_valuation_assistant"
-                }
-            ]   
         },
         {
             "name": "home_valuation_assistant",
@@ -71,5 +64,13 @@ config = {
             ],
             "edges": []
         }
-    ]
+    ],
+    "edges": [
+                {
+                    "name": "on_consent_given",
+                    "description": "Use this tool to indicate that consent has been given and the call may proceed to the home valuation assistant.",
+                    "from": "consent_collector",
+                    "to": "home_valuation_assistant"
+                }
+            ]
 }

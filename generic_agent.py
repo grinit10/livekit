@@ -15,12 +15,14 @@ def make_agent_transition(target_agent_name: str):
         raise ValueError(f"Agent {target_agent_name} not found")
     
     async def transition(context: RunContext):
-        return GenericAgent(chat_ctx=context.session._chat_ctx, instructions=target_node['instructions'], data_capture_tools=target_node['data_capture_tools'], edges=target_node['edges'])
+        return GenericAgent(chat_ctx=context.session._chat_ctx, instructions=target_node['instructions'], name=target_node['name'], \
+        data_capture_tools=target_node['data_capture_tools'])
     return transition
 
 class GenericAgent(BaseAgent):
-    def __init__(self, chat_ctx: ChatContext, instructions: str, data_capture_tools: Optional[list] = [], edges: Optional[list] = []):
+    def __init__(self, chat_ctx: ChatContext, instructions: str, name: str, data_capture_tools: Optional[list] = []):
         tools = []
+        edges = [edge for edge in config['edges'] if edge['from'] == name]
         if edges:
             for edge in edges:
                 tools.append(function_tool(make_agent_transition(edge['to']), name=edge['name'], description=edge['description']))
@@ -29,6 +31,7 @@ class GenericAgent(BaseAgent):
                 tools.append(function_tool(record_data(tool['field']), name=tool['name'], description=tool['description']))
         super().__init__(
             instructions=instructions,
+            name=name,
             chat_ctx=chat_ctx,
             tools=tools
         )

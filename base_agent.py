@@ -18,7 +18,7 @@ from typing import AsyncIterable
 load_dotenv()
 
 class BaseAgent(Agent):
-    def __init__(self, instructions: str, chat_ctx: ChatContext, tools: Optional[list] = []):
+    def __init__(self, instructions: str, chat_ctx: ChatContext, name: str, tools: Optional[list] = []):
         super().__init__(
             instructions=instructions,
             llm=openai.LLM.with_azure(
@@ -29,6 +29,7 @@ class BaseAgent(Agent):
             ),
             tools=tools,
         )
+        self.name = name
         self._fast_llm = groq.LLM(
                 model="llama-3.1-8b-instant"
             )

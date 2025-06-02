@@ -4,12 +4,11 @@ from livekit.agents import RoomInputOptions, AgentSession, ErrorEvent
 from livekit.plugins import elevenlabs, deepgram, silero, noise_cancellation
 from generic_agent import GenericAgent
 from agent_config import config
-from dataclasses import dataclass
-from utils.data_capture import record_data
-from base_agent import BaseAgent
-from data_collector_agent import UserDataCollectorAgent
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from livekit.agents.voice.events import ErrorEvent
+from livekit.agents.voice.background_audio import BackgroundAudioPlayer
+from livekit.agents.voice.background_audio import AudioConfig
+from livekit.agents.voice.background_audio import BuiltinAudioClip
 import json
 
 load_dotenv()
@@ -54,7 +53,8 @@ async def entrypoint(ctx: agents.JobContext):
 
     await session.start(
         room=ctx.room,
-        agent=GenericAgent(chat_ctx=session._chat_ctx, instructions=config["nodes"][0]["instructions"], data_capture_tools=config["nodes"][0]["data_capture_tools"], edges=config["nodes"][0]["edges"]),
+        agent=GenericAgent(chat_ctx=session._chat_ctx, instructions=config["nodes"][0]["instructions"], \
+            name=config["nodes"][0]["name"], data_capture_tools=config["nodes"][0]["data_capture_tools"]),
         room_input_options=RoomInputOptions(
             # LiveKit Cloud enhanced noise cancellation
             # - If self-hosting, omit this parameter
