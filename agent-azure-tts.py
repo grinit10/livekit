@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import RoomInputOptions, AgentSession, ErrorEvent
-from livekit.plugins import elevenlabs, deepgram, silero, noise_cancellation
+from livekit.plugins import elevenlabs, deepgram, silero, noise_cancellation, rime
 from generic_agent import GenericAgent
 from agent_config import config
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -16,18 +16,18 @@ load_dotenv()
 
 async def entrypoint(ctx: agents.JobContext):
 
-    tts = elevenlabs.TTS(
-         voice_id="ODq5zmih8GrVes37Dizd",
-         model="eleven_flash_v2_5"
-     )
-    #tts=rime.TTS(
-    #        model="mist",
-    #        speaker="bayou",
-    #        speed_alpha=0.5,
-    #        reduce_latency=True,
-    #        pause_between_brackets=True,
-    #        api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
-    #    )
+    #tts = elevenlabs.TTS(
+    #     voice_id="ODq5zmih8GrVes37Dizd",
+    #     model="eleven_flash_v2_5"
+    # )
+    tts=rime.TTS(
+            model="mist",
+            speaker="bayou",
+            speed_alpha=0.5,
+            reduce_latency=True,
+            pause_between_brackets=True,
+            api_key="yCjq3alMdqVKAm7P3nbk-upU5V--iuRhL-SZB4tddaE",
+        )
     session = AgentSession(
         userdata={
             "date_of_inspection": None,

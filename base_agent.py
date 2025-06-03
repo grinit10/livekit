@@ -36,8 +36,8 @@ class BaseAgent(Agent):
             role="system",
             content=[
                 "Generate a short instant response to the user's message with 5 to 10 words to make the conversation sound natural and engaging.",
-                "Focus on the chat context to generate the response. MUST MAKE SURE THE RESPONSE IS RELEVANT TO THE CHAT CONTEXT IN ENGLISH.",
-                "Do not answer the questions directly. Examples:, let me think about that, wait a moment, that's a good question, etc.",
+                "Focus on the chat context to generate the response. MUST MAKE SURE THE RESPONSE IS RELEVANT TO THE CHAT HISTORY AND THE CURRENTLY EXECUTING AGENT. SPEAK IN ENGLISH.",
+                "Do not ask questions. Do not answer the questions or provide suggestions or confirm anything directly. Just make a filler response.",
             ],
         )
 
@@ -69,7 +69,7 @@ class BaseAgent(Agent):
                 yield chunk
             fast_llm_fut.set_result(filler_response)
 
-        await self.session.say(_fast_llm_reply(), add_to_chat_ctx=False)
+        await self.session.say(_fast_llm_reply(), add_to_chat_ctx=True)
 
         filler_response = await fast_llm_fut
         turn_ctx.add_message(role="assistant", content=filler_response, interrupted=False)
