@@ -1,6 +1,11 @@
 config = {
+    "id": "6c0e3e89-7514-4514-991b-ae0cfbb8a07a",
+    "is_deleted": False,
+    "title": "test 1",
     "nodes": [
         {
+            "id": "6b72d592-dbb4-4780-a6df-008fadeceebe",
+            "is_deleted": False,
             "name": "consent_collector",
             "instructions": """
                 Inform that your name is Tom and you are calling from Language.
@@ -25,9 +30,15 @@ config = {
 
                 Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
             """,
+            "position": {
+                "x": 211.00000000000006,
+                "y": 237.33333333333337
+            },
             "data_capture_tools": [],
         },
         {
+            "id": "eaa16dea-cc0d-4eef-ab77-8bffde7ba9b3",
+            "is_deleted": False,
             "name": "home_valuation_assistant",
             "instructions": """
                 You work step by step. the steps are as follows and speak in english:
@@ -51,6 +62,10 @@ config = {
 
                 Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
             """,
+            "position": {
+                "x": 728.3333333333334,
+                "y": 310.6666666666667
+            },
             "data_capture_tools": [
                 {
                     "name": "record_date_of_inspection",
@@ -67,10 +82,12 @@ config = {
     ],
     "edges": [
         {
+            "id": "857bfd22-bc28-41df-8319-8185bf865017",
+            "is_deleted": False,
             "name": "on_consent_given",
             "description": "Use this tool to indicate that consent has been given and the call may proceed to the home valuation assistant.",
-            "from": "consent_collector",
-            "to": "home_valuation_assistant"
+            "source_node_id": "6b72d592-dbb4-4780-a6df-008fadeceebe",
+            "dest_node_id": "eaa16dea-cc0d-4eef-ab77-8bffde7ba9b3",
         }
     ]
 }

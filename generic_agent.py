@@ -4,34 +4,34 @@ from utils.data_capture import record_data
 from base_agent import BaseAgent
 from agent_config import config
 
-def make_agent_transition(target_agent_name: str):
+def make_agent_transition(target_agent_id: str):
 
     target_node = {}
     for node in config['nodes']:
-        if node['name'] == target_agent_name:
+        if node['id'] == target_agent_id:
             target_node = node
             break
     if not target_node:
-        raise ValueError(f"Agent {target_agent_name} not found")
+        raise ValueError(f"Agent {target_agent_id} not found")
     
     async def transition(context: RunContext):
-        return GenericAgent(chat_ctx=context.session._chat_ctx, instructions=target_node['instructions'], name=target_node['name'], \
+        return GenericAgent(chat_ctx=context.session._chat_ctx, instructions=target_node['instructions'], id=target_node['id'], \
         data_capture_tools=target_node['data_capture_tools'])
     return transition
 
 class GenericAgent(BaseAgent):
-    def __init__(self, chat_ctx: ChatContext, instructions: str, name: str, data_capture_tools: Optional[list] = []):
+    def __init__(self, chat_ctx: ChatContext, instructions: str, id: str, data_capture_tools: Optional[list] = []):
         tools = []
-        edges = [edge for edge in config['edges'] if edge['from'] == name]
+        edges = [edge for edge in config['edges'] if edge['source_node_id'] == id]
         if edges:
             for edge in edges:
-                tools.append(function_tool(make_agent_transition(edge['to']), name=edge['name'], description=edge['description']))
+                tools.append(function_tool(make_agent_transition(edge['dest_node_id']), name=edge['name'], description=edge['description']))
         if data_capture_tools:
             for tool in data_capture_tools:
                 tools.append(function_tool(record_data(tool['field']), name=tool['name'], description=tool['description']))
         super().__init__(
             instructions=instructions,
-            name=name,
+            id=id,
             chat_ctx=chat_ctx,
             tools=tools
         )

@@ -54,7 +54,7 @@ async def entrypoint(ctx: agents.JobContext):
     await session.start(
         room=ctx.room,
         agent=GenericAgent(chat_ctx=session._chat_ctx, instructions=config["nodes"][0]["instructions"], \
-            name=config["nodes"][0]["name"], data_capture_tools=config["nodes"][0]["data_capture_tools"]),
+            id=config["nodes"][0]["id"], data_capture_tools=config["nodes"][0]["data_capture_tools"]),
         room_input_options=RoomInputOptions(
             # LiveKit Cloud enhanced noise cancellation
             # - If self-hosting, omit this parameter
